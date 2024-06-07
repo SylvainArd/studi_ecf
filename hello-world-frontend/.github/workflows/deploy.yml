@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '20.14'
+          node-version: '14'
 
       - name: Install dependencies
         run: npm install
@@ -27,10 +27,24 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to EC2
+      - name: Deploy to EC2 Instance 1
         env:
-          HOST: ${{ secrets.EC2_HOST }}
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
           USERNAME: ${{ secrets.EC2_USER }}
           KEY: ${{ secrets.EC2_KEY }}
         run: |
-          scp -i $KEY -r build/* $USERNAME@$HOST:/var/www/html/
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          scp -i key.pem -r build/* $USERNAME@$HOST:/var/www/html/
+          rm key.pem
+
+      - name: Deploy to EC2 Instance 2
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_2 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          scp -i key.pem -r build/* $USERNAME@$HOST:/var/www/html/
+          rm key.pem
