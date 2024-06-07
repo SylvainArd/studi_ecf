@@ -30,6 +30,10 @@ jobs:
         run: npm run build
         working-directory: hello-world-frontend
 
+      - name: Add EC2 Instance 1 to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_1 }} >> ~/.ssh/known_hosts
+
       - name: Deploy to EC2 Instance 1
         env:
           HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
@@ -40,6 +44,10 @@ jobs:
           chmod 600 key.pem
           scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/var/www/html/
           rm key.pem
+
+      - name: Add EC2 Instance 2 to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_2 }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2 Instance 2
         env:
