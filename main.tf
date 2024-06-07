@@ -79,12 +79,39 @@ resource "aws_security_group" "rds_sg" {
   }
 }
 
+# Paire de clés SSH
+resource "aws_key_pair" "deployer_key" {
+  key_name   = var.key_name
+  public_key = file("~/.ssh/${var.key_name}.pub")
+}
+
 # Instances EC2 pour le front-end
 resource "aws_instance" "frontend_instance" {
   count         = 2
   ami           = var.ami_id
   instance_type = "t2.micro"
+  key_name      = aws_key_pair.deployer_key.key_name
   security_groups = [aws_security_group.frontend_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update
+              sudo apt install nginx -y
+              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              server {
+                  listen 80;
+                  server_name _;
+
+                  root /var/www/html;
+                  index index.html;
+
+                  location / {
+                      try_files $uri /index.html;
+                  }
+              }
+              EOL
+              sudo systemctl restart nginx
+              EOF
 
   tags = {
     Name = "frontend-instance-${count.index}"
@@ -96,7 +123,111 @@ resource "aws_instance" "backend_instance" {
   count         = 2
   ami           = var.ami_id
   instance_type = "t2.micro"
+  key_name      = aws_key_pair.deployer_key.key_name
   security_groups = [aws_security_group.backend_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update
+              sudo apt install -y openjdk-11-jdk maven
+              sudo apt install -y nginx
+              
+              # Create a simple Spring Boot application
+              mkdir -p /home/ubuntu/springboot-app
+              cd /home/ubuntu/springboot-app
+              
+              # Create Spring Boot application files
+              tee /home/ubuntu/springboot-app/pom.xml > /dev/null <<EOL
+              <project xmlns="http://maven.apache.org/POM/4.0.0"
+                       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                       xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+                  <modelVersion>4.0.0</modelVersion>
+                  <groupId>com.example</groupId>
+                  <artifactId>demo</artifactId>
+                  <version>0.0.1-SNAPSHOT</version>
+                  <packaging>jar</packaging>
+                  <name>demo</name>
+                  <description>Demo project for Spring Boot</description>
+                  <parent>
+                      <groupId>org.springframework.boot</groupId>
+                      <artifactId>spring-boot-starter-parent</artifactId>
+                      <version>2.5.4</version>
+                      <relativePath/> <!-- lookup parent from repository -->
+                  </parent>
+                  <properties>
+                      <java.version>11</java.version>
+                  </properties>
+                  <dependencies>
+                      <dependency>
+                          <groupId>org.springframework.boot</groupId>
+                          <artifactId>spring-boot-starter-web</artifactId>
+                      </dependency>
+                      <dependency>
+                          <groupId>org.springframework.boot</groupId>
+                          <artifactId>spring-boot-starter-test</artifactId>
+                          <scope>test</scope>
+                      </dependency>
+                  </dependencies>
+                  <build>
+                      <plugins>
+                          <plugin>
+                              <groupId>org.springframework.boot</groupId>
+                              <artifactId>spring-boot-maven-plugin</artifactId>
+                          </plugin>
+                      </plugins>
+                  </build>
+              </project>
+              EOL
+
+              mkdir -p /home/ubuntu/springboot-app/src/main/java/com/example/demo
+              tee /home/ubuntu/springboot-app/src/main/java/com/example/demo/DemoApplication.java > /dev/null <<EOL
+              package com.example.demo;
+
+              import org.springframework.boot.SpringApplication;
+              import org.springframework.boot.autoconfigure.SpringBootApplication;
+              import org.springframework.web.bind.annotation.GetMapping;
+              import org.springframework.web.bind.annotation.RestController;
+
+              @SpringBootApplication
+              public class DemoApplication {
+
+                  public static void main(String[] args) {
+                      SpringApplication.run(DemoApplication.class, args);
+                  }
+
+                  @RestController
+                  class HelloController {
+                      @GetMapping("/")
+                      public String hello() {
+                          return "Hello World!";
+                      }
+                  }
+              }
+              EOL
+
+              # Build and run the Spring Boot application
+              cd /home/ubuntu/springboot-app
+              mvn package
+              nohup java -jar target/demo-0.0.1-SNAPSHOT.jar &
+
+              # Configure Nginx to proxy requests to the Spring Boot application
+              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              server {
+                  listen 80;
+                  server_name _;
+
+                  location / {
+                      proxy_pass http://localhost:8080;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto $scheme;
+                  }
+              }
+              EOL
+
+              sudo systemctl restart nginx
+              EOF
 
   tags = {
     Name = "backend-instance-${count.index}"

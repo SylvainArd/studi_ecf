@@ -18,3 +18,13 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "key_name" {
+  description = "The name of the SSH key pair"
+  type        = string
+}
+
+variable "public_key" {
+  description = "The public key content"
+  type        = string
+}
