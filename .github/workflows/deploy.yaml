@@ -37,17 +37,6 @@ jobs:
         run: |
           ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_1 }} >> ~/.ssh/known_hosts
 
-      - name: Create target directory on EC2 Instance 1
-        env:
-          HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
-          USERNAME: ${{ secrets.EC2_USER }}
-          KEY: ${{ secrets.EC2_KEY }}
-        run: |
-          echo "$KEY" > key.pem
-          chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown -R $USERNAME:$USERNAME /usr/share/nginx/html'
-          rm key.pem
-
       - name: Deploy to EC2 Instance 1
         env:
           HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
@@ -56,23 +45,13 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/usr/share/nginx/html/
+          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/'
           rm key.pem
 
       - name: Add EC2 Instance 2 to known_hosts
         run: |
           ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_2 }} >> ~/.ssh/known_hosts
-
-      - name: Create target directory on EC2 Instance 2
-        env:
-          HOST: ${{ secrets.EC2_FRONTEND_HOST_2 }}
-          USERNAME: ${{ secrets.EC2_USER }}
-          KEY: ${{ secrets.EC2_KEY }}
-        run: |
-          echo "$KEY" > key.pem
-          chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown -R $USERNAME:$USERNAME /usr/share/nginx/html'
-          rm key.pem
 
       - name: Deploy to EC2 Instance 2
         env:
@@ -82,5 +61,6 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/usr/share/nginx/html/
+          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/'
           rm key.pem
