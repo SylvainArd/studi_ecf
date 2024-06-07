@@ -30,6 +30,9 @@ jobs:
         run: npm run build
         working-directory: hello-world-frontend
 
+      - name: Create .ssh directory
+        run: mkdir -p ~/.ssh
+
       - name: Add EC2 Instance 1 to known_hosts
         run: |
           ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_1 }} >> ~/.ssh/known_hosts
