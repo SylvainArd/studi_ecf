@@ -46,7 +46,7 @@ jobs:
           echo "$KEY" > key.pem
           chmod 600 key.pem
           scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
-          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx && sudo systemctl restart nodejs'
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
           rm key.pem
 
       - name: Add EC2 Instance 2 to known_hosts
@@ -62,5 +62,5 @@ jobs:
           echo "$KEY" > key.pem
           chmod 600 key.pem
           scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
-          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx && sudo systemctl restart nodejs'
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
           rm key.pem
