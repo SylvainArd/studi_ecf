@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown $USERNAME:$USERNAME /usr/share/nginx/html'
+          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown -R $USERNAME:$USERNAME /usr/share/nginx/html'
           rm key.pem
 
       - name: Deploy to EC2 Instance 1
@@ -71,7 +71,7 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown $USERNAME:$USERNAME /usr/share/nginx/html'
+          ssh -i key.pem $USERNAME@$HOST 'sudo mkdir -p /usr/share/nginx/html && sudo chown -R $USERNAME:$USERNAME /usr/share/nginx/html'
           rm key.pem
 
       - name: Deploy to EC2 Instance 2
