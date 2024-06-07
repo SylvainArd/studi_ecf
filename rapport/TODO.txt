@@ -1,0 +1,2 @@
+décrire ajout utilisateur admin sur AWS
+décrire installation AWS Cli et Terraform

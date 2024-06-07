@@ -1,3 +1,8 @@
+# Initialiser Terraform
 terraform init
-terraform plan -var-file="terraform.tfvars"
-terraform apply -var-file="terraform.tfvars"
+
+# Générer le plan et l'enregistrer dans un fichier nommé tfplan
+terraform plan -var-file="terraform.tfvars" -out=tfplan
+
+# Appliquer le plan enregistré
+terraform apply "tfplan"
