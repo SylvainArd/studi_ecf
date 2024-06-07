@@ -95,11 +95,40 @@ resource "aws_instance" "frontend_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              yum update -y
-              amazon-linux-extras install nginx1 -y
-              systemctl start nginx
-              systemctl enable nginx
-              cat > /etc/nginx/conf.d/default.conf <<EOL
+              sudo yum update -y
+              sudo yum install nginx -y
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
+              sudo cat > /etc/nginx/nginx.conf <<EOL
+              user nginx;
+              worker_processes auto;
+              error_log /var/log/nginx/error.log;
+              pid /run/nginx.pid;
+
+              events {
+                  worker_connections 1024;
+              }
+
+              http {
+                  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                                    '$status $body_bytes_sent "$http_referer" '
+                                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+                  access_log  /var/log/nginx/access.log  main;
+
+                  sendfile            on;
+                  tcp_nopush          on;
+                  tcp_nodelay         on;
+                  keepalive_timeout   65;
+                  types_hash_max_size 2048;
+
+                  include             /etc/nginx/mime.types;
+                  default_type        application/octet-stream;
+
+                  include /etc/nginx/conf.d/*.conf;
+              }
+              EOL
+              sudo cat > /etc/nginx/conf.d/default.conf <<EOL
               server {
                   listen 80;
                   server_name _;
@@ -112,7 +141,7 @@ resource "aws_instance" "frontend_instance" {
                   }
               }
               EOL
-              systemctl restart nginx
+              sudo systemctl restart nginx
               EOF
 
   tags = {
@@ -130,12 +159,12 @@ resource "aws_instance" "backend_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              yum update -y
-              amazon-linux-extras install java-openjdk11 -y
-              yum install maven -y
-              amazon-linux-extras install nginx1 -y
-              systemctl start nginx
-              systemctl enable nginx
+              sudo yum update -y
+              sudo yum install java-11-amazon-corretto -y
+              sudo yum install maven -y
+              sudo yum install nginx -y
+              sudo systemctl enable nginx
+              sudo systemctl start nginx
 
               # Create a simple Spring Boot application
               mkdir -p /home/ec2-user/springboot-app
@@ -211,26 +240,26 @@ resource "aws_instance" "backend_instance" {
               EOL
 
               # Build and run the Spring Boot application
-              mvn package
-              nohup java -jar target/demo-0.0.1-SNAPSHOT.jar &
+              sudo mvn package
+              sudo nohup java -jar target/demo-0.0.1-SNAPSHOT.jar &
 
               # Configure Nginx to proxy requests to the Spring Boot application
-              cat > /etc/nginx/conf.d/default.conf <<EOL
-              server {
-                  listen 80;
-                  server_name _;
+              sudo cat > /etc/nginx/conf.d/default.conf <<EOL
+			  server {
+				listen 80;
+				server_name _;
 
-                  location / {
-                      proxy_pass http://localhost:8080;
-                      proxy_set_header Host $host;
-                      proxy_set_header X-Real-IP $remote_addr;
-                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                      proxy_set_header X-Forwarded-Proto $scheme;
-                  }
-              }
+				location / {
+					proxy_pass http://localhost:8080;
+					proxy_set_header Host \$host;
+					proxy_set_header X-Real-IP \$remote_addr;
+					proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+					proxy_set_header X-Forwarded-Proto \$scheme;
+				}
+			  }
               EOL
 
-              systemctl restart nginx
+              sudo systemctl restart nginx
               EOF
 
   tags = {
