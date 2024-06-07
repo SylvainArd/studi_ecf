@@ -99,7 +99,7 @@ resource "aws_instance" "frontend_instance" {
               sudo yum install nginx -y
               sudo systemctl enable nginx
               sudo systemctl start nginx
-              sudo cat > /etc/nginx/nginx.conf <<EOL
+              sudo tee /etc/nginx/nginx.conf > /dev/null <<EOL
               user nginx;
               worker_processes auto;
               error_log /var/log/nginx/error.log;
@@ -128,7 +128,7 @@ resource "aws_instance" "frontend_instance" {
                   include /etc/nginx/conf.d/*.conf;
               }
               EOL
-              sudo cat > /etc/nginx/conf.d/default.conf <<EOL
+              sudo tee /etc/nginx/conf.d/default.conf > /dev/null <<EOL
               server {
                   listen 80;
                   server_name _;
@@ -137,7 +137,7 @@ resource "aws_instance" "frontend_instance" {
                   index index.html;
 
                   location / {
-                      try_files $uri /index.html;
+                      try_files \$uri /index.html;
                   }
               }
               EOL
@@ -171,7 +171,7 @@ resource "aws_instance" "backend_instance" {
               cd /home/ec2-user/springboot-app
 
               # Create Spring Boot application files
-              cat > pom.xml <<EOL
+              sudo tee /home/ec2-user/springboot-app/pom.xml > /dev/null <<EOL
               <project xmlns="http://maven.apache.org/POM/4.0.0"
                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -213,8 +213,8 @@ resource "aws_instance" "backend_instance" {
               </project>
               EOL
 
-              mkdir -p src/main/java/com/example/demo
-              cat > src/main/java/com/example/demo/DemoApplication.java <<EOL
+              mkdir -p /home/ec2-user/springboot-app/src/main/java/com/example/demo
+              sudo tee /home/ec2-user/springboot-app/src/main/java/com/example/demo/DemoApplication.java > /dev/null <<EOL
               package com.example.demo;
 
               import org.springframework.boot.SpringApplication;
@@ -244,19 +244,19 @@ resource "aws_instance" "backend_instance" {
               sudo nohup java -jar target/demo-0.0.1-SNAPSHOT.jar &
 
               # Configure Nginx to proxy requests to the Spring Boot application
-              sudo cat > /etc/nginx/conf.d/default.conf <<EOL
-			  server {
-				listen 80;
-				server_name _;
+              sudo tee /etc/nginx/conf.d/default.conf > /dev/null <<EOL
+              server {
+                  listen 80;
+                  server_name _;
 
-				location / {
-					proxy_pass http://localhost:8080;
-					proxy_set_header Host \$host;
-					proxy_set_header X-Real-IP \$remote_addr;
-					proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-					proxy_set_header X-Forwarded-Proto \$scheme;
-				}
-			  }
+                  location / {
+                      proxy_pass http://localhost:8080;
+                      proxy_set_header Host \$host;
+                      proxy_set_header X-Real-IP \$remote_addr;
+                      proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto \$scheme;
+                  }
+              }
               EOL
 
               sudo systemctl restart nginx
