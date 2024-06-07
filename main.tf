@@ -95,14 +95,16 @@ resource "aws_instance" "frontend_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt update
-              sudo apt install nginx -y
-              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              yum update -y
+              amazon-linux-extras install nginx1 -y
+              systemctl start nginx
+              systemctl enable nginx
+              cat > /etc/nginx/conf.d/default.conf <<EOL
               server {
                   listen 80;
                   server_name _;
 
-                  root /var/www/html;
+                  root /usr/share/nginx/html;
                   index index.html;
 
                   location / {
@@ -110,7 +112,7 @@ resource "aws_instance" "frontend_instance" {
                   }
               }
               EOL
-              sudo systemctl restart nginx
+              systemctl restart nginx
               EOF
 
   tags = {
@@ -128,16 +130,19 @@ resource "aws_instance" "backend_instance" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt update
-              sudo apt install -y openjdk-11-jdk maven
-              sudo apt install -y nginx
-              
+              yum update -y
+              amazon-linux-extras install java-openjdk11 -y
+              yum install maven -y
+              amazon-linux-extras install nginx1 -y
+              systemctl start nginx
+              systemctl enable nginx
+
               # Create a simple Spring Boot application
-              mkdir -p /home/ubuntu/springboot-app
-              cd /home/ubuntu/springboot-app
-              
+              mkdir -p /home/ec2-user/springboot-app
+              cd /home/ec2-user/springboot-app
+
               # Create Spring Boot application files
-              tee /home/ubuntu/springboot-app/pom.xml > /dev/null <<EOL
+              cat > pom.xml <<EOL
               <project xmlns="http://maven.apache.org/POM/4.0.0"
                        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -179,8 +184,8 @@ resource "aws_instance" "backend_instance" {
               </project>
               EOL
 
-              mkdir -p /home/ubuntu/springboot-app/src/main/java/com/example/demo
-              tee /home/ubuntu/springboot-app/src/main/java/com/example/demo/DemoApplication.java > /dev/null <<EOL
+              mkdir -p src/main/java/com/example/demo
+              cat > src/main/java/com/example/demo/DemoApplication.java <<EOL
               package com.example.demo;
 
               import org.springframework.boot.SpringApplication;
@@ -206,12 +211,11 @@ resource "aws_instance" "backend_instance" {
               EOL
 
               # Build and run the Spring Boot application
-              cd /home/ubuntu/springboot-app
               mvn package
               nohup java -jar target/demo-0.0.1-SNAPSHOT.jar &
 
               # Configure Nginx to proxy requests to the Spring Boot application
-              sudo tee /etc/nginx/sites-available/default > /dev/null <<EOL
+              cat > /etc/nginx/conf.d/default.conf <<EOL
               server {
                   listen 80;
                   server_name _;
@@ -226,7 +230,7 @@ resource "aws_instance" "backend_instance" {
               }
               EOL
 
-              sudo systemctl restart nginx
+              systemctl restart nginx
               EOF
 
   tags = {
