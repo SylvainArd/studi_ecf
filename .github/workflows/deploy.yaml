@@ -57,13 +57,10 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
-            sudo yum install -y nodejs
-            cd /home/$USERNAME/hello-world-frontend
-            npm install
-            npm test -- --watchAll=false
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -'
+          ssh -i key.pem $USERNAME@$HOST 'sudo yum install -y nodejs'
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm install'
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm test -- --watchAll=false'
           rm key.pem
 
       - name: Test on EC2 Instance 2
@@ -74,13 +71,10 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
-            sudo yum install -y nodejs
-            cd /home/$USERNAME/hello-world-frontend
-            npm install
-            npm test -- --watchAll=false
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -'
+          ssh -i key.pem $USERNAME@$HOST 'sudo yum install -y nodejs'
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm install'
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm test -- --watchAll=false'
           rm key.pem
 
   build:
@@ -96,10 +90,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            cd /home/$USERNAME/hello-world-frontend
-            npm run build
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm run build'
           rm key.pem
 
       - name: Build on EC2 Instance 2
@@ -110,10 +101,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            cd /home/$USERNAME/hello-world-frontend
-            npm run build
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm run build'
           rm key.pem
 
   deploy:
@@ -129,10 +117,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
-            sudo systemctl restart nginx
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
           rm key.pem
 
       - name: Deploy to EC2 Instance 2
@@ -143,8 +128,5 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST <<EOF
-            sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
-            sudo systemctl restart nginx
-EOF
+          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
           rm key.pem
