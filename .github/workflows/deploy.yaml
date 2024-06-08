@@ -57,7 +57,9 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
+            curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
+            sudo yum install -y nodejs
             cd /home/$USERNAME/hello-world-frontend
             npm install
             npm test -- --watchAll=false
@@ -72,7 +74,9 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
+            curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
+            sudo yum install -y nodejs
             cd /home/$USERNAME/hello-world-frontend
             npm install
             npm test -- --watchAll=false
@@ -92,7 +96,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
             cd /home/$USERNAME/hello-world-frontend
             npm run build
 EOF
@@ -106,7 +110,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
             cd /home/$USERNAME/hello-world-frontend
             npm run build
 EOF
@@ -125,7 +129,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
             sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
             sudo systemctl restart nginx
 EOF
@@ -139,7 +143,7 @@ EOF
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+          ssh -i key.pem $USERNAME@$HOST <<EOF
             sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
             sudo systemctl restart nginx
 EOF
