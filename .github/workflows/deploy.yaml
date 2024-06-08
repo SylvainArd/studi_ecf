@@ -63,7 +63,7 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -'
+          ssh -i key.pem $USERNAME@$HOST 'curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -'
           ssh -i key.pem $USERNAME@$HOST 'sudo yum install -y nodejs'
           ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm install'
           ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm test -- --watchAll=false'
@@ -80,7 +80,7 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          ssh -i key.pem $USERNAME@$HOST 'curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -'
+          ssh -i key.pem $USERNAME@$HOST 'curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -'
           ssh -i key.pem $USERNAME@$HOST 'sudo yum install -y nodejs'
           ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm install'
           ssh -i key.pem $USERNAME@$HOST 'cd /home/$USERNAME/hello-world-frontend && npm test -- --watchAll=false'
