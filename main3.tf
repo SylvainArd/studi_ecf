@@ -2,6 +2,8 @@ provider "aws" {
   region = "us-east-1" # Remplacez par votre région AWS
 }
 
+# Groupes de sécurité, instances EC2, RDS, et autres ressources précédentes
+
 # Groupe de sécurité pour le front-end
 resource "aws_security_group" "frontend_sg" {
   name        = "frontend-sg"
@@ -20,6 +22,13 @@ resource "aws_security_group" "frontend_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 5666
+    to_port     = 5666
+    protocol    = "tcp"
+    security_groups = [aws_security_group.centreon_sg.id]
   }
 
   egress {
@@ -50,6 +59,13 @@ resource "aws_security_group" "backend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 5666
+    to_port     = 5666
+    protocol    = "tcp"
+    security_groups = [aws_security_group.centreon_sg.id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -67,6 +83,41 @@ resource "aws_security_group" "rds_sg" {
   ingress {
     from_port   = 3306
     to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Groupe de sécurité pour les instances Centreon
+resource "aws_security_group" "centreon_sg" {
+  name        = "centreon-sg"
+  description = "Allow HTTP, SSH and Centreon traffic"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 5666
+    to_port     = 5666
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -241,6 +292,86 @@ resource "aws_instance" "backend_instance" {
   }
 }
 
+# Instances EC2 pour Centreon Backend
+resource "aws_instance" "centreon_backend_instance" {
+  ami           = var.ami_id
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.deployer_key.key_name
+  security_groups = [aws_security_group.centreon_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo yum update -y
+              sudo yum install -y wget
+              wget https://yum.centreon.com/standard/22.10/el7/stable/noarch/RPMS/centreon-release-22.10-1.el7.centos.noarch.rpm
+              sudo rpm -i centreon-release-22.10-1.el7.centos.noarch.rpm
+              sudo yum install -y centreon
+              sudo systemctl start httpd
+              sudo systemctl start cbd
+              sudo systemctl start centengine
+              sudo systemctl start centreontrapd
+              sudo systemctl enable httpd
+              sudo systemctl enable cbd
+              sudo systemctl enable centengine
+              sudo systemctl enable centreontrapd
+
+              # Configuration pour superviser les instances backend
+              backend1_ip=${aws_instance.backend_instance[0].private_ip}
+              backend2_ip=${aws_instance.backend_instance[1].private_ip}
+              
+              sudo /usr/share/centreon/bin/centreon -u admin -p Centreon -o HOST -a ADD -v "backend1;Backend1;$backend1_ip;app,OS-Linux"
+              sudo /usr/share/centreon/bin/centreon -u admin -p Centreon -o HOST -a ADD -v "backend2;Backend2;$backend2_ip;app,OS-Linux"
+              
+              sudo systemctl restart cbd
+              sudo systemctl restart centengine
+              sudo systemctl restart centreontrapd
+              EOF
+
+  tags = {
+    Name = "centreon-backend-instance"
+  }
+}
+
+# Instances EC2 pour Centreon Frontend
+resource "aws_instance" "centreon_frontend_instance" {
+  ami           = var.ami_id
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.deployer_key.key_name
+  security_groups = [aws_security_group.centreon_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo yum update -y
+              sudo yum install -y wget
+              wget https://yum.centreon.com/standard/22.10/el7/stable/noarch/RPMS/centreon-release-22.10-1.el7.centos.noarch.rpm
+              sudo rpm -i centreon-release-22.10-1.el7.centos.noarch.rpm
+              sudo yum install -y centreon
+              sudo systemctl start httpd
+              sudo systemctl start cbd
+              sudo systemctl start centengine
+              sudo systemctl start centreontrapd
+              sudo systemctl enable httpd
+              sudo systemctl enable cbd
+              sudo systemctl enable centengine
+              sudo systemctl enable centreontrapd
+
+              # Configuration pour superviser les instances frontend
+              frontend1_ip=${aws_instance.frontend_instance[0].private_ip}
+              frontend2_ip=${aws_instance.frontend_instance[1].private_ip}
+              
+              sudo /usr/share/centreon/bin/centreon -u admin -p Centreon -o HOST -a ADD -v "frontend1;Frontend1;$frontend1_ip;app,OS-Linux"
+              sudo /usr/share/centreon/bin/centreon -u admin -p Centreon -o HOST -a ADD -v "frontend2;Frontend2;$frontend2_ip;app,OS-Linux"
+              
+              sudo systemctl restart cbd
+              sudo systemctl restart centengine
+              sudo systemctl restart centreontrapd
+              EOF
+
+  tags = {
+    Name = "centreon-frontend-instance"
+  }
+}
+
 # Load Balancer pour le front-end
 resource "aws_elb" "frontend_elb" {
   name               = "frontend-elb"
@@ -308,7 +439,6 @@ resource "aws_db_instance" "default" {
     Name = "mydb"
   }
 }
-
 
 # AWS Backup Vault
 resource "aws_backup_vault" "rds_backup_vault" {
