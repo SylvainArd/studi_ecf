@@ -6,37 +6,117 @@ on:
       - main
 
 jobs:
-  build:
+  copy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: hello-world-frontend
-
-      - name: Run tests
-        run: npm test -- --watchAll=false
-        working-directory: hello-world-frontend
-
-      - name: Build project
-        run: npm run build
-        working-directory: hello-world-frontend
-
       - name: Create .ssh directory
         run: mkdir -p ~/.ssh
 
       - name: Add EC2 Instance 1 to known_hosts
-        run: |
-          ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_1 }} >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_1 }} >> ~/.ssh/known_hosts
 
+      - name: Copy code to EC2 Instance 1
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          rsync -avz -e "ssh -i key.pem" hello-world-frontend/ $USERNAME@$HOST:/home/$USERNAME/hello-world-frontend/
+          rm key.pem
+
+      - name: Add EC2 Instance 2 to known_hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_2 }} >> ~/.ssh/known_hosts
+
+      - name: Copy code to EC2 Instance 2
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_2 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          rsync -avz -e "ssh -i key.pem" hello-world-frontend/ $USERNAME@$HOST:/home/$USERNAME/hello-world-frontend/
+          rm key.pem
+
+  test:
+    runs-on: ubuntu-latest
+    needs: copy
+
+    steps:
+      - name: Test on EC2 Instance 1
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            cd /home/$USERNAME/hello-world-frontend
+            npm install
+            npm test -- --watchAll=false
+EOF
+          rm key.pem
+
+      - name: Test on EC2 Instance 2
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_2 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            cd /home/$USERNAME/hello-world-frontend
+            npm install
+            npm test -- --watchAll=false
+EOF
+          rm key.pem
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Build on EC2 Instance 1
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            cd /home/$USERNAME/hello-world-frontend
+            npm run build
+EOF
+          rm key.pem
+
+      - name: Build on EC2 Instance 2
+        env:
+          HOST: ${{ secrets.EC2_FRONTEND_HOST_2 }}
+          USERNAME: ${{ secrets.EC2_USER }}
+          KEY: ${{ secrets.EC2_KEY }}
+        run: |
+          echo "$KEY" > key.pem
+          chmod 600 key.pem
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            cd /home/$USERNAME/hello-world-frontend
+            npm run build
+EOF
+          rm key.pem
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
       - name: Deploy to EC2 Instance 1
         env:
           HOST: ${{ secrets.EC2_FRONTEND_HOST_1 }}
@@ -45,13 +125,11 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
-          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
+            sudo systemctl restart nginx
+EOF
           rm key.pem
-
-      - name: Add EC2 Instance 2 to known_hosts
-        run: |
-          ssh-keyscan -H ${{ secrets.EC2_FRONTEND_HOST_2 }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2 Instance 2
         env:
@@ -61,6 +139,8 @@ jobs:
         run: |
           echo "$KEY" > key.pem
           chmod 600 key.pem
-          scp -i key.pem -r hello-world-frontend/build/* $USERNAME@$HOST:/home/$USERNAME/
-          ssh -i key.pem $USERNAME@$HOST 'sudo cp -r /home/$USERNAME/* /usr/share/nginx/html/ && sudo systemctl restart nginx'
+          ssh -i key.pem $USERNAME@$HOST << 'EOF'
+            sudo cp -r /home/$USERNAME/hello-world-frontend/build/* /usr/share/nginx/html/
+            sudo systemctl restart nginx
+EOF
           rm key.pem
