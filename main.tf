@@ -244,7 +244,7 @@ resource "aws_instance" "backend_instance" {
 # Load Balancer pour le front-end
 resource "aws_elb" "frontend_elb" {
   name               = "frontend-elb"
-  availability_zones = ["us-east-1a", "us-east-1b"] # Remplacez par vos zones de disponibilité
+  availability_zones = ["us-east-1d"] 
   security_groups    = [aws_security_group.frontend_sg.id]
 
   listener {
@@ -268,7 +268,7 @@ resource "aws_elb" "frontend_elb" {
 # Load Balancer pour le back-end
 resource "aws_elb" "backend_elb" {
   name               = "backend-elb"
-  availability_zones = ["us-east-1a", "us-east-1b"] # Remplacez par vos zones de disponibilité
+  availability_zones = ["us-east-1d"] 
   security_groups    = [aws_security_group.backend_sg.id]
 
   listener {
