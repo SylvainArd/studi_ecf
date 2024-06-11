@@ -2,6 +2,8 @@ provider "aws" {
   region = "us-east-1" # Remplacez par votre région AWS
 }
 
+# Groupes de sécurité, instances EC2, RDS, et autres ressources précédentes
+
 # Groupe de sécurité pour le front-end
 resource "aws_security_group" "frontend_sg" {
   name        = "frontend-sg"
@@ -21,6 +23,7 @@ resource "aws_security_group" "frontend_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
 
   egress {
     from_port   = 0
@@ -50,6 +53,8 @@ resource "aws_security_group" "backend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -78,6 +83,8 @@ resource "aws_security_group" "rds_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+
 
 # Paire de clés SSH
 resource "aws_key_pair" "deployer_key" {
@@ -241,6 +248,9 @@ resource "aws_instance" "backend_instance" {
   }
 }
 
+
+
+
 # Load Balancer pour le front-end
 resource "aws_elb" "frontend_elb" {
   name               = "frontend-elb"
@@ -291,7 +301,7 @@ resource "aws_elb" "backend_elb" {
 
 # Instance RDS
 resource "aws_db_instance" "default" {
-  allocated_storage    = 20
+  allocated_storage    = 5
   storage_type         = "gp2"
   engine               = "mysql"
   engine_version       = "8.0"
@@ -308,7 +318,6 @@ resource "aws_db_instance" "default" {
     Name = "mydb"
   }
 }
-
 
 # AWS Backup Vault
 resource "aws_backup_vault" "rds_backup_vault" {
