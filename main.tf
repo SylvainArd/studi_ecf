@@ -2,8 +2,6 @@ provider "aws" {
   region = "us-east-1" # Remplacez par votre région AWS
 }
 
-# Groupes de sécurité, instances EC2, RDS, et autres ressources précédentes
-
 # Groupe de sécurité pour le front-end
 resource "aws_security_group" "frontend_sg" {
   name        = "frontend-sg"
@@ -23,7 +21,6 @@ resource "aws_security_group" "frontend_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
 
   egress {
     from_port   = 0
@@ -53,8 +50,6 @@ resource "aws_security_group" "backend_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-
-
   egress {
     from_port   = 0
     to_port     = 0
@@ -83,8 +78,6 @@ resource "aws_security_group" "rds_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-
-
 
 # Paire de clés SSH
 resource "aws_key_pair" "deployer_key" {
@@ -372,3 +365,4 @@ resource "aws_backup_selection" "rds_backup_selection" {
     aws_db_instance.default.arn
   ]
 }
+
